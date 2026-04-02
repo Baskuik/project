@@ -36,7 +36,8 @@
         <p style="color:rgba(245,240,232,.4);font-size:.8rem;margin-top:.25rem;">Alle velden zijn verplicht tenzij anders aangegeven</p>
       </div>
 
-      <form class="book-form" onsubmit="handleBooking(event)">
+      <form class="book-form" method="POST" action="{{ url('/bookings') }}">
+        @csrf
         <!-- TYPE SELECTION -->
         <div class="book-step">
           <div class="book-step__label">
@@ -44,39 +45,20 @@
             <span>Type verblijf</span>
           </div>
           <div class="type-cards">
-            <label class="type-card">
-              <input type="radio" name="type" value="zoo" checked>
-              <div class="type-card__inner">
-                <span class="type-card__icon">🦁</span>
-                <span class="type-card__name">Dierentuin Suite</span>
-                <span class="type-card__desc">Slaap naast exotische dieren</span>
-              </div>
-            </label>
-            <label class="type-card">
-              <input type="radio" name="type" value="park">
-              <div class="type-card__inner">
-                <span class="type-card__icon">🌲</span>
-                <span class="type-card__name">Vakantiepark Lodge</span>
-                <span class="type-card__desc">Luxe in het groen</span>
-              </div>
-            </label>
-            <label class="type-card">
-              <input type="radio" name="type" value="aqua">
-              <div class="type-card__inner">
-                <span class="type-card__icon">🏊</span>
-                <span class="type-card__name">Aqua Resort</span>
-                <span class="type-card__desc">Leven bij het water</span>
-              </div>
-            </label>
-            <label class="type-card">
-              <input type="radio" name="type" value="bunker">
-              <div class="type-card__inner">
-                <span class="type-card__icon">🕵️</span>
-                <span class="type-card__name">Bunker Experience</span>
-                <span class="type-card__desc">Geheime underground</span>
-              </div>
-            </label>
+            @foreach ($stays as $stay)
+              <label class="type-card">
+                <input type="radio" name="stay_id" value="{{ $stay->id }}" {{ old('stay_id', $loop->first ? $stay->id : null) == $stay->id ? 'checked' : '' }} required>
+                <div class="type-card__inner">
+                  <span class="type-card__icon">🏠</span>
+                  <span class="type-card__name">{{ $stay->name }}</span>
+                  <span class="type-card__desc">€{{ number_format($stay->price_per_night / 100, 2, ',', '.') }} per nacht · max {{ $stay->max_adults }} volw. / {{ $stay->max_kids }} kind.</span>
+                </div>
+              </label>
+            @endforeach
           </div>
+          @error('stay_id')
+            <p style="color:#f7a6a6;margin-top:.75rem;font-size:.85rem;">{{ $message }}</p>
+          @enderror
         </div>
 
         <!-- DETAILS -->
@@ -88,19 +70,31 @@
           <div class="book-form__grid">
             <div class="form-group">
               <label class="form-label">Voornaam</label>
-              <input type="text" class="form-input" placeholder="Jonas" required>
+              <input type="text" class="form-input" name="first_name" value="{{ old('first_name', $user->name ? explode(' ', $user->name)[0] : '') }}" placeholder="Jonas" required>
+              @error('first_name')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">Achternaam</label>
-              <input type="text" class="form-input" placeholder="de Vries" required>
+              <input type="text" class="form-input" name="last_name" value="{{ old('last_name') }}" placeholder="de Vries" required>
+              @error('last_name')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">E-mailadres</label>
-              <input type="email" class="form-input" placeholder="jouw@email.nl" required>
+              <input type="email" class="form-input" name="email" value="{{ old('email', $user->email) }}" placeholder="jouw@email.nl" required>
+              @error('email')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">Telefoonnummer</label>
-              <input type="tel" class="form-input" placeholder="+31 6 00 00 00 00">
+              <input type="tel" class="form-input" name="phone_number" value="{{ old('phone_number') }}" placeholder="+31 6 00 00 00 00" required pattern="^\+?[0-9\s\-()]{8,20}$">
+              @error('phone_number')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
           </div>
         </div>
@@ -114,23 +108,43 @@
           <div class="book-form__grid">
             <div class="form-group">
               <label class="form-label">Aankomst</label>
-              <input type="date" class="form-input" required>
+              <input type="date" class="form-input" name="arrive_date" value="{{ old('arrive_date') }}" required>
+              @error('arrive_date')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">Vertrek</label>
-              <input type="date" class="form-input" required>
+              <input type="date" class="form-input" name="leaving_date" value="{{ old('leaving_date') }}" required>
+              @error('leaving_date')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">Aantal volwassenen</label>
-              <select class="form-input form-select">
-                <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5+</option>
+              <select class="form-input form-select" name="number_adults" required>
+                <option value="1" {{ old('number_adults', 2) == 1 ? 'selected' : '' }}>1</option>
+                <option value="2" {{ old('number_adults', 2) == 2 ? 'selected' : '' }}>2</option>
+                <option value="3" {{ old('number_adults') == 3 ? 'selected' : '' }}>3</option>
+                <option value="4" {{ old('number_adults') == 4 ? 'selected' : '' }}>4</option>
+                <option value="5" {{ old('number_adults') == 5 ? 'selected' : '' }}>5+</option>
               </select>
+              @error('number_adults')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
             <div class="form-group">
               <label class="form-label">Aantal kinderen <span style="color:rgba(245,240,232,.3)">(optioneel)</span></label>
-              <select class="form-input form-select">
-                <option selected>0</option><option>1</option><option>2</option><option>3</option><option>4+</option>
+              <select class="form-input form-select" name="number_kids" required>
+                <option value="0" {{ old('number_kids', 0) == 0 ? 'selected' : '' }}>0</option>
+                <option value="1" {{ old('number_kids') == 1 ? 'selected' : '' }}>1</option>
+                <option value="2" {{ old('number_kids') == 2 ? 'selected' : '' }}>2</option>
+                <option value="3" {{ old('number_kids') == 3 ? 'selected' : '' }}>3</option>
+                <option value="4" {{ old('number_kids') == 4 ? 'selected' : '' }}>4+</option>
               </select>
+              @error('number_kids')
+                <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+              @enderror
             </div>
           </div>
         </div>
@@ -142,51 +156,26 @@
             <span>Extra's & wensen</span>
           </div>
           <div class="extras-grid">
-            <label class="extra-item">
-              <input type="checkbox" class="extra-check">
-              <div class="extra-item__inner">
-                <span class="extra-item__icon">🍳</span>
-                <div>
-                  <span class="extra-item__name">Ontbijt op bed</span>
-                  <span class="extra-item__price">+€18,- p.p.</span>
+            @foreach ($extras as $extra)
+              <label class="extra-item">
+                <input type="checkbox" class="extra-check" name="extras[]" value="{{ $extra->id }}" {{ in_array($extra->id, old('extras', [])) ? 'checked' : '' }}>
+                <div class="extra-item__inner">
+                  <span class="extra-item__icon">✨</span>
+                  <div>
+                    <span class="extra-item__name">{{ $extra->name }}</span>
+                    <span class="extra-item__price">+€{{ number_format($extra->price / 100, 2, ',', '.') }}</span>
+                  </div>
                 </div>
-              </div>
-            </label>
-            <label class="extra-item">
-              <input type="checkbox" class="extra-check">
-              <div class="extra-item__inner">
-                <span class="extra-item__icon">🦁</span>
-                <div>
-                  <span class="extra-item__name">Safari morning tour</span>
-                  <span class="extra-item__price">+€45,- p.p.</span>
-                </div>
-              </div>
-            </label>
-            <label class="extra-item">
-              <input type="checkbox" class="extra-check">
-              <div class="extra-item__inner">
-                <span class="extra-item__icon">🎁</span>
-                <div>
-                  <span class="extra-item__name">Welkomstpakket merch</span>
-                  <span class="extra-item__price">+€34,95</span>
-                </div>
-              </div>
-            </label>
-            <label class="extra-item">
-              <input type="checkbox" class="extra-check">
-              <div class="extra-item__inner">
-                <span class="extra-item__icon">📸</span>
-                <div>
-                  <span class="extra-item__name">Professionele fotoshoot</span>
-                  <span class="extra-item__price">+€79,-</span>
-                </div>
-              </div>
-            </label>
+              </label>
+            @endforeach
           </div>
 
           <div class="form-group" style="margin-top:1.25rem;">
-            <label class="form-label">Speciale wensen <span style="color:rgba(245,240,232,.3)">(optioneel)</span></label>
-            <textarea class="form-input form-textarea" rows="3" placeholder="Dieetwensen, speciale gelegenheden, allergieën..."></textarea>
+            <label class="form-label">Speciale wensen</label>
+            <textarea class="form-input form-textarea" name="special_wish" rows="3" placeholder="Dieetwensen, speciale gelegenheden, allergieën..." required>{{ old('special_wish') }}</textarea>
+            @error('special_wish')
+              <p style="color:#f7a6a6;margin-top:.5rem;font-size:.8rem;">{{ $message }}</p>
+            @enderror
           </div>
         </div>
 
@@ -201,10 +190,13 @@
         </div>
       </form>
 
-      <div class="book-success" id="bookSuccess" style="display:none;">
+      <div class="book-success" id="bookSuccess" style="display: {{ session('booking_success') ? 'block' : 'none' }};">
         <div class="book-success__icon">✓</div>
         <h3 class="sa-heading" style="font-size:1.8rem;color:var(--ivory);margin-bottom:.75rem;">Aanvraag ontvangen!</h3>
-        <p style="color:rgba(245,240,232,.55);max-width:400px;margin:0 auto 1.5rem;line-height:1.7;">Je boekingsaanvraag is verstuurd. Je ontvangt binnen 24 uur een bevestiging per e-mail met alle details.</p>
+        <p style="color:rgba(245,240,232,.55);max-width:400px;margin:0 auto 1rem;line-height:1.7;">Je boekingsaanvraag is verstuurd. Je ontvangt binnen 24 uur een bevestiging per e-mail met alle details.</p>
+        @if(session('booking_total'))
+          <p style="color:var(--gold);font-weight:700;letter-spacing:.08em;margin-bottom:1.5rem;">Totaal: €{{ number_format(session('booking_total') / 100, 2, ',', '.') }}</p>
+        @endif
         <a href="/shop" class="sa-btn sa-btn--gold">Bekijk onze shop</a>
       </div>
     </div>
@@ -607,15 +599,6 @@
     .book-form { padding: 1.5rem; }
   }
 </style>
-
-<script>
-  function handleBooking(e) {
-    e.preventDefault();
-    const form = e.target;
-    form.style.display = 'none';
-    document.getElementById('bookSuccess').style.display = 'block';
-  }
-</script>
 
 </body>
 </html>

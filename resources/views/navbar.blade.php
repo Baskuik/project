@@ -195,7 +195,7 @@
     <div class="sa-nav__logo-mark">SA</div>
     <div>
       <div class="sa-nav__brand-text">Secret Agent</div>
-      <div class="sa-nav__brand-sub">Bunker & Resorts</div>
+      <div class="sa-nav__brand-sub">Trips & Resorts</div>
     </div>
   </a>
   <ul class="sa-nav__links">
@@ -203,6 +203,17 @@
     <li><a href="/about">Over ons</a></li>
     <li><a href="/shop">Shop</a></li>
     <li><a href="/contact">Contact</a></li>
-    <li><a href="/bookings" class="sa-nav__cta">Boek nu</a></li>
+    @auth
+      <li><a href="/bookings" class="sa-nav__cta">Boek nu</a></li>
+      <li>
+        <form method="POST" action="{{ url('/logout') }}" style="display:inline;">
+          @csrf
+          <button type="submit" style="background:transparent;border:none;color:rgba(245,240,232,.65);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;">Uitloggen</button>
+        </form>
+      </li>
+    @else
+      <li><a href="/login">Inloggen</a></li>
+      <li><a href="/register" class="sa-nav__cta">Registreren</a></li>
+    @endauth
   </ul>
 </nav>
