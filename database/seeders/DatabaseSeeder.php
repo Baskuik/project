@@ -22,6 +22,12 @@ class DatabaseSeeder extends Seeder
             'password' => 'password',
         ]);
 
-        $this->call(BookingSeeder::class);
+        $this->call([
+            BookingSeeder::class,
+            ExtrasSeeder::class,
+            PaymentsSeeder::class,
+            ShopProductsSeeder::class,
+            ShopPaymentsSeeder::class,
+        ]);
     }
 }
